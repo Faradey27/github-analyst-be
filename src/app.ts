@@ -1,79 +1,98 @@
 import * as bodyParser from 'body-parser';
 import * as compression from 'compression';
 import * as dotenv from 'dotenv';
-import * as errorHandler from 'errorhandler';
 import * as express from 'express';
-import * as flash from 'express-flash';
 import * as expressStatusMonitor from 'express-status-monitor';
-import * as expressValidator from 'express-validator';
 import * as path from 'path';
 import { IFeature } from './@types/features.d';
 
+interface IFeatureMap {
+  [key: string]: IFeature
+}
+
 class App {
-  private app: express.Application;
+  private expressApp: express.Application;
   private server: any;
-  private features: {[key: string]: IFeature} = {};
+  private features: IFeatureMap = {};
 
   constructor() {
+    /* here we loading our env variables, like MONGO_URL, API_KEY, etc.*/
     dotenv.config({ path: path.join(__dirname, './../.env.example') });
 
-    this.app = express();
+    this.expressApp = express();
     this
       .setPort()
       .setMiddlewares();
   }
 
-  public getExpress = (): express.Application => this.app;
+  public getExpressApp = (): express.Application => this.expressApp;
 
   public setPort = (): App => {
-    this.app.set('port', process.env.PORT || '3000');
+    this.expressApp.set('port', process.env.PORT || '3000');
 
     return this;
   }
 
   public setMiddlewares = (): App => {
-    this.app.use(expressStatusMonitor());
-    this.app.use(compression());
-    this.app.use(bodyParser.json());
-    this.app.use(bodyParser.urlencoded({ extended: true }));
-    this.app.use(errorHandler());
-    this.app.use(expressValidator());
-    this.app.use(flash());
-    this.app.use(express.static(path.join(__dirname, 'public'), { maxAge: 31557600000 }));
+    /*
+      expressStatusMonitor(https://github.com/RafalWilinski/express-status-monitor)
+      nice tool for monitoring memory usage, response time, etc.
+    */
+    this.expressApp.use(expressStatusMonitor());
+    /*
+      compression(https://github.com/expressjs/compression)
+      we wanna gzip everything that we sending to the client
+    */
+    this.expressApp.use(compression());
+    /*
+      bodyParser(https://github.com/expressjs/body-parser)
+      we wanna have json in req.body instead of string
+    */
+    this.expressApp.use(bodyParser.json());
+    /*
+      express.static
+      here we define folder which we gonna server, so if we will put image in /public folder, we could get it as /imageName.png
+    */
+    this.expressApp.use(express.static(path.join(__dirname, 'public'), { maxAge: 31557600000 }));
 
     return this;
   }
 
+  /*
+    this function should be used to add new feature to project,
+    each feature is small independent sub-application
+  */
   public addFeature(feature: any): Promise<any> {
-    const instanceOfFeature: IFeature = new feature(this.app);
+    const instanceOfFeature: IFeature = new feature(this.expressApp);
     this.features[instanceOfFeature.featureName] = instanceOfFeature;
 
     return instanceOfFeature.connect();
   }
 
-  public getFeatures = (): {[key: string]: IFeature} => this.features;
+  public getFeatures = (): IFeatureMap => this.features;
 
+  /* here we just starting express server and log info about that */
   public start = (): Promise<any> => {
     return new Promise((resolve) => {
-      this.server = this.app.listen(this.app.get('port'), () => {
+      // we wanna save link to started server
+      this.server = this.expressApp.listen(this.expressApp.get('port'), () => {
         console.info(
           ('App is running at http://localhost:%d in %s mode'),
-          this.app.get('port'),
-          this.app.get('env'),
+          this.expressApp.get('port'),
+          this.expressApp.get('env'),
         );
         console.info('Press CTRL-C to stop\n');
 
-        resolve();
+        resolve({status: 'OK'});
       });
     });
   }
 
+  /* we stoping express server and log info about this */
   public stop = (): Promise<any> => {
     this.server.close();
-
     console.info('Server stopped');
-
-    return Promise.resolve({});
+    return Promise.resolve({status: 'OK'});
   }
 }
 

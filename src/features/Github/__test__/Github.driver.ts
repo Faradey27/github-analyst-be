@@ -7,7 +7,7 @@ class GithubDriver {
 
   constructor() {
     app.addFeature(Github);
-    this.request = supertest(app.getExpress());
+    this.request = supertest(app.getExpressApp());
   }
 
   public is = {

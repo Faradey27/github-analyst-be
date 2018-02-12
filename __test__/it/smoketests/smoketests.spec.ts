@@ -25,7 +25,7 @@ describe('List of short tests that cover key product features', () => {
     stubedConsoleInfo.restore();
   });
 
-  it('should start server automaticaly on root file run + features', (done) => {
+  it('should start server automaticaly with features on root file run', (done) => {
     const stubedConsoleInfo = stub(console, 'info');
     const app = require('./../../../src').default;
     expect(driver.get.features().github).toBeTruthy();

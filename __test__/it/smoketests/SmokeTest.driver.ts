@@ -5,7 +5,7 @@ class SmokeTestDriver {
   private request: supertest.SuperTest<supertest.Test>;
 
   constructor() {
-    this.request = supertest(app.getExpress());
+    this.request = supertest(app.getExpressApp());
   }
 
   public when = {

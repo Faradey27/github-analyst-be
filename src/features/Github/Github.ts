@@ -3,16 +3,16 @@ import { IFeature } from './../../@types/features.d';
 
 class Github implements IFeature {
   private static PREFIX = '/api/v1/github';
-  private app: Application;
+  private expressApp: Application;
 
   constructor(app: Application) {
-    this.app = app;
+    this.expressApp = app;
   }
 
   public featureName: string = 'github';
 
   public connect = () => {
-    this.setupRouting(this.app);
+    this.setupRouting(this.expressApp);
     return Promise.resolve({ status: 'OK' });
   }
 
